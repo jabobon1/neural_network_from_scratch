@@ -1,11 +1,8 @@
+from typing import Union, Optional
 import mglearn
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-
-
-class InputShapeError(Exception):
-    pass
 
 
 class Model:
@@ -26,86 +23,99 @@ class Model:
         self.bias_2 = np.random.uniform(-1, 1, (1, self.output_shape))
 
     @staticmethod
-    def softmax(x: np.ndarray):
-        return np.exp(x) / np.sum(np.exp(x))
-
-    @staticmethod
-    def tanh(x: np.ndarray):
-        return np.tanh(x)
-
-    @staticmethod
     def sigmoid(x: np.ndarray):
+        """
+        Сигмоидная функция
+        1/(1+e^x)
+        :param x: float or np array of float
+        :return: float or np.array of float
+        """
         return 1 / (1 + np.exp(-x))
 
     @staticmethod
-    def sigmoid_derivative(x):
+    def sigmoid_derivative(x: Union[np.ndarray, np.float]):
         """
-        The first derivative of the sigmoid function wrt x
+        Производная сигмоидной функции
+        f(x)' = f(x) * (1-f(x))
+        :param x: float or np array of float
+        :return: float or np.array of float
         """
         sigmoid_out = Model.sigmoid(x)
         return sigmoid_out * (1.0 - sigmoid_out)
 
     @staticmethod
-    def mean_square_error(y_true, y_pred):
+    def mean_square_error(y_true: Union[np.ndarray, np.float],
+                          y_pred: Union[np.ndarray, np.float]):
         """
-        mse = 1/n * Sum(y-y`)^2
-        :param y_true: np.array
-        :param y_pred: np.array
-        :return: float
+        Среднеквадратичная ошибка
+        MSE = 1/n * Sum(y-y_pred)^2
+        :param y_true: np.array of numbers
+        :param y_pred: np.array of numbers
+        :return: np.float
         """
         length = len(y_pred) if isinstance(y_pred, np.ndarray) else 1
         return np.sum(np.power(y_true - y_pred, 2)) / length
 
     @staticmethod
-    def mse_derivative(y_true, y_pred):
-        # x^n = nx^(n-1)
+    def mse_derivative(y_true: Union[np.ndarray, np.float],
+                       y_pred: Union[np.ndarray, np.float]):
         """
-        mse` =  1/n * -2 (y-y`)
-        :param y_true: np.array
-        :param y_pred: np.array
-        :return: float
+        Производная функции среднеквадратичной ошибки
+        MSE` =  1/n * -2 (y-y`)
+        :param y_true: np.array of numbers
+        :param y_pred: np.array of numbers
+        :return: np.float
         """
         length = len(y_pred) if isinstance(y_pred, np.ndarray) else 1
         return 1 / length * np.sum(-2 * (y_true - y_pred))
 
     @staticmethod
-    def accuracy(y_true, y_pred):
+    def accuracy(y_true: np.float,
+                 y_pred: np.float):
         if y_true == np.round(y_pred):
             return 1
         return 0
 
-    def predict(self, x: np.ndarray):
-        if len(x.shape) == 1 and x.shape[0] != self.input_shape:
-            print(x.shape)
-            raise InputShapeError
-        elif len(x.shape) == 2 and x.shape[1] != self.input_shape:
-            print(x.shape)
-            raise InputShapeError
-        if len(x.shape) == 2:
-            res = []
-            for _x in x:
-                res.append(self._predict(_x))
-            return np.array(res)
-        elif len(x.shape) == 1:
-            return self._predict(x)
-        raise InputShapeError
+    def predict(self, x: Union[np.ndarray, np.float]) -> Union[np.ndarray, np.float]:
+        """
+        Предсказание значений на основе входных данных
+        Прямое прохождение через скрытые слои нейорсети
+        :param x: input data
+        :return: predicted values
+        """
+        try:
+            if len(x.shape) == 1:
+                assert x.shape[0] == self.input_shape
+                return self._predict(x)
+            elif len(x.shape) == 2:
+                assert x.shape[1] == self.input_shape
+                return np.array([self._predict(_x) for _x in x])
+        except AssertionError:
+            raise InputShapeError(f'Wrong shape of input data {x.shape}')
 
     def _predict(self, x: np.ndarray):
-        hidden_layer = self.sigmoid(np.dot(x, self.weights_1) + self.bias_1.squeeze())
-        return self.sigmoid(np.dot(self.weights_2.squeeze(), hidden_layer) + self.bias_2.squeeze())
+        # прохождение через первые веса от входных нейронов до скрытого слоя
+        hidden_layer = np.dot(x, self.weights_1) + self.bias_1.squeeze()
+        # выходные данные скрытого слоя после применения сигмоидальной функции
+        out_hidden_layer = self.sigmoid(hidden_layer)
+        # прохождение через последние веса к нейронам на последнеи сле
+        output_layer = np.dot(self.weights_2.squeeze(), out_hidden_layer) + self.bias_2.squeeze()
+        return self.sigmoid(output_layer)
 
     def update_weights(self,
                        x_train: np.ndarray,
                        y_true: np.float,
                        lr=0.001) -> (np.float, np.float):
-        # FEEDFORWARDING
+        # FEEDFORWARDING то же самое, что в _predict()
         sum_h1 = np.dot(x_train, self.weights_1) + self.bias_1.squeeze()
         out_h1 = self.sigmoid(sum_h1)
 
         sum_h2 = np.dot(self.weights_2.squeeze(), out_h1) + self.bias_2.squeeze()
         out_h2 = self.sigmoid(sum_h2)
 
+        # считаем производную среднеквадратичной ошибки
         output_mse_der = self.mse_derivative(y_true, out_h2)
+
         # выходноый слой
         # 2ой bias
         d_ypred_d_b2 = self.sigmoid_derivative(sum_h2)
@@ -131,13 +141,32 @@ class Model:
 
         return self.mean_square_error(y_true, out_h2), self.accuracy(y_true, out_h2)
 
-    def fit(self, X, y, lr=0.001, steps=1000, early_stop_acc=None) -> np.ndarray:
+    def fit(self,
+            x: np.ndarray,
+            y: np.ndarray,
+            lr: float = 0.001,
+            steps: int = 1000,
+            early_stop_acc: Optional[float] = None,
+            early_stop_loss: float = 0.18) -> np.ndarray:
+        """
+        Метод для обучения нейонной сети
+        :param x: Входные данные
+        :param y: Вызодные данные для обучения
+        :param lr: learning rate
+        :param steps: кол-во итераций
+        :param early_stop_acc: опционально, если указано -
+            обучение закончится по достижению нужных значений
+        :param early_stop_loss: если указал early_stop_acc,
+         обучение закончится по достижению нужных значений early_stop_acc и early_stop_loss
+
+        :return: np.array of losses
+        """
         losses = []
         for i in range(steps):
             print(f'ITERATION {i + 1}')
             t_loss = []
             accuracies = []
-            for x_train, y_true in zip(X, y):
+            for x_train, y_true in zip(x, y):
                 loss, acc = self.update_weights(x_train, y_true, lr=lr)
                 t_loss.append(loss)
                 accuracies.append(acc)
@@ -145,9 +174,14 @@ class Model:
             print('ACCURACY', np.mean(accuracies))
             print('LOSS', mean_loss)
             losses.append(mean_loss)
-            if early_stop_acc and mean_loss < 0.17 and np.mean(accuracies) >= early_stop_acc:
+            if early_stop_acc and mean_loss < early_stop_loss and np.mean(
+                    accuracies) >= early_stop_acc:
                 break
         return np.array(losses)
+
+
+class InputShapeError(Exception):
+    pass
 
 
 if __name__ == '__main__':
