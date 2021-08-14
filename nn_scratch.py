@@ -13,9 +13,6 @@ class Model:
         self.hidden_shape = hidden_shape
         self.output_shape = output_shape
 
-        self.hidden_output_1 = np.zeros(self.hidden_shape)
-        self.hidden_output_2 = np.zeros(self.output_shape)
-
         self.weights_1 = np.random.uniform(-1, 1,
                                            (self.input_shape, self.hidden_shape))
         self.weights_2 = np.random.uniform(-1, 1, (self.hidden_shape, self.output_shape))
@@ -26,9 +23,9 @@ class Model:
     def sigmoid(x: np.ndarray):
         """
         Сигмоидная функция
-        1/(1+e^x)
-        :param x: float or np array of float
-        :return: float or np.array of float
+        1/(1+e^-x)
+        :param x: float or np array of floats
+        :return: float or np.array of floats
         """
         return 1 / (1 + np.exp(-x))
 
