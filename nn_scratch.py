@@ -51,14 +51,14 @@ class Model:
         :return: np.float
         """
         length = len(y_pred) if isinstance(y_pred, np.ndarray) else 1
-        return np.sum(np.power(y_true - y_pred, 2)) / length
+        return 1 / length * np.sum(np.power(y_true - y_pred, 2))
 
     @staticmethod
     def mse_derivative(y_true: Union[np.ndarray, np.float],
                        y_pred: Union[np.ndarray, np.float]):
         """
         Производная функции среднеквадратичной ошибки
-        MSE` =  1/n * -2 (y-y`)
+        MSE` =  1/n * sum(-2 * (y-y`))
         :param y_true: np.array of numbers
         :param y_pred: np.array of numbers
         :return: np.float
@@ -196,17 +196,17 @@ if __name__ == '__main__':
     plt.plot(losses)
     plt.show()
 
-    for x_train, y_true in zip(X, y):
-        pred = model.predict(x_train)
-        print(f'x_train: {x_train}\npredicted:{pred}\ntrue:{y_true}')
-
-    cm2 = ListedColormap(['#619dff', '#8d5cce'])
-
-    mglearn.plots.plot_2d_classification(classifier=model, X=X, fill=True, alpha=.4, cm=cm2)
-    mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
-    plt.legend(['zeroes', 'ones'], title='True values')
-
-    # mglearn.discrete_scatter(X_train[:, 0], X_train[:, 1], y_train)
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.show()
+    # for x_train, y_true in zip(X, y):
+    #     pred = model.predict(x_train)
+    #     print(f'x_train: {x_train}\npredicted:{pred}\ntrue:{y_true}')
+    #
+    # cm2 = ListedColormap(['#619dff', '#8d5cce'])
+    #
+    # mglearn.plots.plot_2d_classification(classifier=model, X=X, fill=True, alpha=.4, cm=cm2)
+    # mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+    # plt.legend(['zeroes', 'ones'], title='True values')
+    #
+    # # mglearn.discrete_scatter(X_train[:, 0], X_train[:, 1], y_train)
+    # plt.xlabel('X')
+    # plt.ylabel('Y')
+    # plt.show()
