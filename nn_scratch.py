@@ -93,9 +93,9 @@ class Model:
     def _predict(self, x: np.ndarray):
         # прохождение через первые веса от входных нейронов до скрытого слоя
         hidden_layer = np.dot(x, self.weights_1) + self.bias_1.squeeze()
-        # выходные данные скрытого слоя после применения сигмоидальной функции
+        # входные данные скрытого слоя после применения сигмоидальной функции
         out_hidden_layer = self.sigmoid(hidden_layer)
-        # прохождение через последние веса к нейронам на последнеи сле
+        # прохождение через последние веса к нейронам на последнем слое
         output_layer = np.dot(self.weights_2.squeeze(), out_hidden_layer) + self.bias_2.squeeze()
         return self.sigmoid(output_layer)
 
@@ -103,30 +103,41 @@ class Model:
                        x_train: np.ndarray,
                        y_true: np.float,
                        lr=0.001) -> (np.float, np.float):
+        """Метод для обновления весов с помощью градиентного спуска"""
         # FEEDFORWARDING то же самое, что в _predict()
-        sum_h1 = np.dot(x_train, self.weights_1) + self.bias_1.squeeze()
-        out_h1 = self.sigmoid(sum_h1)
 
+        # прохождение через первые веса от входных нейронов до скрытого слоя
+        sum_h1 = np.dot(x_train, self.weights_1) + self.bias_1.squeeze()
+        # входные данные скрытого слоя после применения сигмоидальной функции
+        out_h1 = self.sigmoid(sum_h1)
+        # выход после прохождения скрытго слоя + bias
         sum_h2 = np.dot(self.weights_2.squeeze(), out_h1) + self.bias_2.squeeze()
+        # выход всей сети после применения сигмоидальной функции
         out_h2 = self.sigmoid(sum_h2)
+        # _____END FEEDFORWARDING_____
 
         # считаем производную среднеквадратичной ошибки
         output_mse_der = self.mse_derivative(y_true, out_h2)
 
         # выходноый слой
-        # 2ой bias
+        # производная выхода после скрытого слоя для обновления 2ого bias
         d_ypred_d_b2 = self.sigmoid_derivative(sum_h2)
-        # 2ой скрытый слой
+
+        # скрытый слой
+        # результат перемножения производной выходного слоя и выходных значений первого слоя
         d_ypred_d_w2 = np.dot(out_h1, d_ypred_d_b2)
+        # результат весов выходного слоя и производной выходного слоя
         d_ypred_d_h1 = np.dot(self.weights_2, d_ypred_d_b2)
 
         # 1ый скрытый слой
+        # производная выхода первого слоя для обновления 1ого bias
         d_h1_d_b1 = self.sigmoid_derivative(sum_h1)
-
+        # перемножаем входные даные с производной каждого из весов первого слоя
         d_h1_d_w1 = np.zeros(self.weights_1.shape)
         for i in range(self.hidden_shape):
             d_h1_d_w1[:, i] = np.dot(x_train, d_h1_d_b1[i])
 
+        # обновляем веса и bias'ы с учетов learning rate
         self.bias_1 -= lr * output_mse_der * \
                        d_ypred_d_h1.squeeze() * d_h1_d_b1.squeeze()
         self.weights_1 -= lr * output_mse_der * \
