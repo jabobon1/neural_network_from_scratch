@@ -195,29 +195,25 @@ class InputShapeError(Exception):
 if __name__ == '__main__':
     X = np.array([[1, 1], [0, 0], [0, 1], [1, 0]])
     y = np.array([0, 0, 1, 1])
-
-    plt.scatter([0, 1], [0, 1], marker='x')
-    plt.scatter([0, 1], [1, 0], marker='o')
-    plt.ylim(-0.25, 1.25)
-    plt.legend(['zeroes', 'ones'], title='True values')
-    plt.show()
-
     model = Model(input_shape=2, hidden_shape=3, output_shape=1)
     losses = model.fit(X, y, lr=0.1, steps=6000)
+
     plt.plot(losses)
+    plt.xlabel('Iteration')
+    plt.ylabel('MSE')
     plt.show()
 
-    # for x_train, y_true in zip(X, y):
-    #     pred = model.predict(x_train)
-    #     print(f'x_train: {x_train}\npredicted:{pred}\ntrue:{y_true}')
-    #
-    # cm2 = ListedColormap(['#619dff', '#8d5cce'])
-    #
-    # mglearn.plots.plot_2d_classification(classifier=model, X=X, fill=True, alpha=.4, cm=cm2)
-    # mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
-    # plt.legend(['zeroes', 'ones'], title='True values')
-    #
-    # # mglearn.discrete_scatter(X_train[:, 0], X_train[:, 1], y_train)
-    # plt.xlabel('X')
-    # plt.ylabel('Y')
-    # plt.show()
+    for x_train, y_true in zip(X, y):
+        pred = model.predict(x_train)
+        print(f'x_train: {x_train}\npredicted:{pred.round(0)}\ntrue:{y_true}\n')
+
+
+    cm2 = ListedColormap(['#619dff', '#8d5cce'])
+
+    mglearn.plots.plot_2d_classification(classifier=model, X=X, fill=True, alpha=.4, cm=cm2)
+    mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+    plt.legend(['zeroes', 'ones'], title='True values')
+
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.show()
